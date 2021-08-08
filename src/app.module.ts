@@ -32,6 +32,7 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
       "database": process.env.DB_DATABASE,
       "synchronize": process.env.NODE_ENV !== "prod",
       "logging": true,
+      "entities": ["dist/**/*.entity{.ts,.js}"]
     }),
     RestaurantsModule,
   ],
