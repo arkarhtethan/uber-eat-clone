@@ -5,15 +5,15 @@ import { CreateAccountInput } from "./dtos/create-account.dto";
 import { LoginInput } from "./dtos/login.dot";
 import { User } from "./entities/user.entity";
 
-import * as jwt from "jsonwebtoken";
 import { ConfigService } from "@nestjs/config";
+import { JwtService } from "src/jwt/jwt.service";
 
 @Injectable()
 export class UsersService {
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
-        private readonly configService: ConfigService
+        private readonly jwtService: JwtService
     ) { }
 
     async createAccount ({ email, password, role }: CreateAccountInput): Promise<{ ok: boolean, error?: string }> {
@@ -50,7 +50,7 @@ export class UsersService {
                 }
             }
             // make a JWT and give it to a user
-            const token = jwt.sign({ id: user.id }, this.configService.get("SECRET_KEY"));
+            const token = this.jwtService.sign(user.id);
             return {
                 ok: true,
                 token,
@@ -64,4 +64,7 @@ export class UsersService {
 
     }
 
+    async findById (id: number): Promise<User> {
+        return await this.userRepository.findOne({ id })
+    }
 }
