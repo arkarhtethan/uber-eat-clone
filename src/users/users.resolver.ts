@@ -4,6 +4,7 @@ import { AuthUser } from "src/auth/auth-user.decorator";
 import { AuthGuard } from "src/auth/auth.guard";
 import { CreateAccountInput, CreateAccountOutput } from "./dtos/create-account.dto";
 import { LoginInput, LoginOutput } from "./dtos/login.dot";
+import { UserProfileInupt, UserProfileOutput } from "./dtos/user-profile.dto";
 import { User } from "./entities/user.entity";
 import { UsersService } from "./users.service";
 
@@ -51,5 +52,26 @@ export class UsersResolver {
     @UseGuards(AuthGuard)
     me (@AuthUser() authUser: User) {
         return authUser;
+    }
+
+    @Query(returns => UserProfileOutput)
+    @UseGuards(AuthGuard)
+    async userProfile (@Args() userProfileInupt: UserProfileInupt): Promise<UserProfileOutput> {
+        try {
+            const user = await this.usersService.findById(userProfileInupt.userId)
+            console.log(user);
+            if (!user) {
+                throw new Error("User Not Found");
+            }
+            return {
+                ok: Boolean(user),
+                user,
+            }
+        } catch (e) {
+            return {
+                error: 'User not found',
+                ok: false,
+            }
+        }
     }
 }
