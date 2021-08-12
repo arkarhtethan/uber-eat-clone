@@ -6,9 +6,7 @@ import { EmailVar, MailModuleOptions } from 'src/common/mail.interfaces';
 
 @Injectable()
 export class MailService {
-    constructor(@Inject(CONFIG_OPTIONS) private readonly options: MailModuleOptions) {
-        // this.sendEmail('testing', 'test');
-    }
+    constructor(@Inject(CONFIG_OPTIONS) private readonly options: MailModuleOptions) { }
 
     private async sendEmail (
         subject: string,
