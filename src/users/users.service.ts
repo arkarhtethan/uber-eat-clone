@@ -11,6 +11,7 @@ import { EditProfileInput, EditProfileOutput } from "./dtos/edit-profile.dto";
 import { Verification } from "./entities/verification.entity";
 import { UserProfileOutput } from "./dtos/user-profile.dto";
 import { VerifyEmailOutput } from "./dtos/verify-email.dto";
+import { MailService } from "src/mail/mail.service";
 
 @Injectable()
 export class UsersService {
@@ -19,7 +20,8 @@ export class UsersService {
         private readonly userRepository: Repository<User>,
         @InjectRepository(Verification)
         private readonly verificationRepository: Repository<Verification>,
-        private readonly jwtService: JwtService
+        private readonly jwtService: JwtService,
+        private readonly mailService: MailService
     ) { }
 
     async createAccount ({ email, password, role }: CreateAccountInput): Promise<CreateAccountOutput> {
@@ -30,9 +32,10 @@ export class UsersService {
             }
             const user = await this.userRepository.create({ email, password, role })
             await this.userRepository.save(user)
-            await this.verificationRepository.save(this.verificationRepository.create({
+            const verification = await this.verificationRepository.save(this.verificationRepository.create({
                 user,
             }))
+            this.mailService.sendVerificationEmail(user.email, verification.code)
             return { ok: true };
         } catch (e) {
             return { ok: false, error: `Couldn't create account.` };
@@ -101,9 +104,10 @@ export class UsersService {
             if (email) {
                 user.email = email;
                 user.verified = false;
-                await this.verificationRepository.save(this.verificationRepository.create({
+                const verification = await this.verificationRepository.save(this.verificationRepository.create({
                     user,
-                }))
+                }));
+                this.mailService.sendVerificationEmail(user.email, verification.code)
             }
             if (password) {
                 user.password = password;
@@ -125,7 +129,8 @@ export class UsersService {
             const verification = await this.verificationRepository.findOne({ code }, { relations: ['user'] });
             if (verification) {
                 verification.user.verified = true;
-                this.userRepository.save(verification.user);
+                await this.userRepository.save(verification.user);
+                await this.verificationRepository.delete(verification.id);
                 return { ok: true, };
             }
             throw new Error();
