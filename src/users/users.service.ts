@@ -1,23 +1,28 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { CreateAccountInput } from "./dtos/create-account.dto";
-import { LoginInput } from "./dtos/login.dot";
+import { CreateAccountInput, CreateAccountOutput } from "./dtos/create-account.dto";
+import { LoginInput, LoginOutput } from "./dtos/login.dot";
 import { User } from "./entities/user.entity";
 
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "src/jwt/jwt.service";
-import { EditProfileInput } from "./dtos/edit-profile.dto";
+import { EditProfileInput, EditProfileOutput } from "./dtos/edit-profile.dto";
+import { Verification } from "./entities/verification.entity";
+import { UserProfileOutput } from "./dtos/user-profile.dto";
+import { VerifyEmailOutput } from "./dtos/verify-email.dto";
 
 @Injectable()
 export class UsersService {
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
+        @InjectRepository(Verification)
+        private readonly verificationRepository: Repository<Verification>,
         private readonly jwtService: JwtService
     ) { }
 
-    async createAccount ({ email, password, role }: CreateAccountInput): Promise<{ ok: boolean, error?: string }> {
+    async createAccount ({ email, password, role }: CreateAccountInput): Promise<CreateAccountOutput> {
         try {
             const exists = await this.userRepository.findOne({ email });
             if (exists) {
@@ -25,6 +30,9 @@ export class UsersService {
             }
             const user = await this.userRepository.create({ email, password, role })
             await this.userRepository.save(user)
+            await this.verificationRepository.save(this.verificationRepository.create({
+                user,
+            }))
             return { ok: true };
         } catch (e) {
             return { ok: false, error: `Couldn't create account.` };
@@ -32,10 +40,14 @@ export class UsersService {
     }
 
     async login ({ email, password }: LoginInput):
-        Promise<{ ok: boolean, error?: string, token?: string }> {
+        Promise<LoginOutput> {
         // find user with email
         try {
-            const user = await this.userRepository.findOne({ email });
+            const user = await this.userRepository.findOne(
+                { email },
+                { select: ['id', 'password'] }
+            );
+
             if (!user) {
                 return {
                     ok: false,
@@ -65,18 +77,65 @@ export class UsersService {
 
     }
 
-    async findById (id: number): Promise<User> {
-        return await this.userRepository.findOne({ id })
+    async findById (id: number): Promise<UserProfileOutput> {
+        try {
+            const user = await this.userRepository.findOne({ id })
+            if (!user) {
+                throw new Error("User Not Found");
+            }
+            return {
+                ok: true,
+                user,
+            }
+        } catch (error) {
+            return {
+                error: "User not found.",
+                ok: false,
+            }
+        }
     }
 
-    async editProfile (userId: number, { email, password }: EditProfileInput): Promise<User> {
-        const user = await this.userRepository.findOne(userId);
-        if (email) {
-            user.email = email;
+    async editProfile (userId: number, { email, password }: EditProfileInput): Promise<EditProfileOutput> {
+        try {
+            const user = await this.userRepository.findOne(userId);
+            if (email) {
+                user.email = email;
+                user.verified = false;
+                await this.verificationRepository.save(this.verificationRepository.create({
+                    user,
+                }))
+            }
+            if (password) {
+                user.password = password;
+            }
+            await this.userRepository.save(user);
+            return {
+                ok: true,
+            }
+        } catch (error) {
+            return {
+                ok: false,
+                error
+            }
         }
-        if (password) {
-            user.password = password;
+    }
+
+    async verifyEmail (code: string): Promise<VerifyEmailOutput> {
+        try {
+            const verification = await this.verificationRepository.findOne({ code }, { relations: ['user'] });
+            if (verification) {
+                verification.user.verified = true;
+                this.userRepository.save(verification.user);
+                return { ok: true, };
+            }
+            throw new Error();
         }
-        return this.userRepository.save(user);
+        catch (error) {
+            console.log(error);
+            return {
+                ok: false,
+                error
+            }
+        }
     }
 }
