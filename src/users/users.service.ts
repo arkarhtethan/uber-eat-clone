@@ -74,7 +74,7 @@ export class UsersService {
         } catch (error) {
             return {
                 ok: false,
-                error,
+                error: "Wrong credentials",
             }
         }
 
@@ -82,10 +82,7 @@ export class UsersService {
 
     async findById (id: number): Promise<UserProfileOutput> {
         try {
-            const user = await this.userRepository.findOne({ id })
-            if (!user) {
-                throw new Error("User Not Found");
-            }
+            const user = await this.userRepository.findOneOrFail({ id })
             return {
                 ok: true,
                 user,
@@ -104,9 +101,10 @@ export class UsersService {
             if (email) {
                 user.email = email;
                 user.verified = false;
-                const verification = await this.verificationRepository.save(this.verificationRepository.create({
-                    user,
-                }));
+                const verification = await this.verificationRepository.save(
+                    this.verificationRepository.create({
+                        user,
+                    }));
                 this.mailService.sendVerificationEmail(user.email, verification.code)
             }
             if (password) {
@@ -119,7 +117,7 @@ export class UsersService {
         } catch (error) {
             return {
                 ok: false,
-                error
+                error: 'Could not update profile'
             }
         }
     }
@@ -133,13 +131,15 @@ export class UsersService {
                 await this.verificationRepository.delete(verification.id);
                 return { ok: true, };
             }
-            throw new Error();
-        }
-        catch (error) {
-            console.log(error);
             return {
                 ok: false,
-                error
+                error: "Verification not found."
+            }
+        }
+        catch (error) {
+            return {
+                ok: false,
+                error: "Could not verify email."
             }
         }
     }
