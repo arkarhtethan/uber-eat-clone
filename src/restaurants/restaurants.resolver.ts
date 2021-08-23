@@ -1,6 +1,11 @@
+import { SetMetadata } from "@nestjs/common";
 import { Args, Mutation, Query, Resolver } from "@nestjs/graphql";
-import { CreateRestaurantDto } from "./dtos/create-restaurant.dto";
-import { UpdateRestaurantDto } from "./dtos/update-restaurant.dto";
+import { AuthUser } from "src/auth/auth-user.decorator";
+import { Role } from "src/auth/role.decorator";
+import { User } from "src/users/entities/user.entity";
+import { CreateRestaurantInput, CreateRestaurantOutput } from "./dtos/create-restaurant.dto";
+import { EditRestaurantInput, EditRestaurantOutput } from "./dtos/edit-restaurant.dto";
+
 import { Restaurant } from "./entities/restaurant.entity";
 import { RestaurantService } from "./restaurants.service";
 
@@ -9,33 +14,22 @@ export class RestaurantResolver {
 
     constructor(private readonly restaurantService: RestaurantService) { }
 
-    @Query(returns => [Restaurant])
-    restaurants (): Promise<Restaurant[]> {
-        return this.restaurantService.getAll();
-    }
-
-    @Mutation(returns => Boolean)
+    @Mutation(returns => CreateRestaurantOutput)
+    @Role(["Owner"])
     async createRestaurant (
-        @Args('input') createRestaurantDto: CreateRestaurantDto
-    ): Promise<boolean> {
-        try {
-            await this.restaurantService.createRestaurant(createRestaurantDto)
-            return true;
-        } catch (e) {
-            return false;
-        }
+        @Args('input') createRestaurantInput: CreateRestaurantInput,
+        @AuthUser() authUser: User,
+    ): Promise<CreateRestaurantOutput> {
+        return this.restaurantService.createRestaurant(authUser, createRestaurantInput)
     }
 
-    @Mutation(returns => Boolean)
-    async updateRestaurant (
-        @Args('input') updateRestaurantDto: UpdateRestaurantDto,
-    ): Promise<boolean> {
-        try {
-            await this.restaurantService.updateRestaurant(updateRestaurantDto);
-            return true;
-        } catch (e) {
-            console.log(e);
-            return false;
-        }
+    @Mutation(returns => EditRestaurantOutput)
+    @Role(["Owner"])
+    editRestaurant (
+        @AuthUser() authUser: User,
+        @Args('input') editRestaurantInput: EditRestaurantInput,
+    ): EditRestaurantOutput {
+        return { ok: true }
     }
+
 }
