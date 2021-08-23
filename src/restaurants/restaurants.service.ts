@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "src/users/entities/user.entity";
 import { Repository } from "typeorm";
+import { AllCategoriesOutput } from "./dtos/all-categories.dto";
 import { CreateRestaurantInput, CreateRestaurantOutput } from "./dtos/create-restaurant.dto";
 import { DeleteRestaurantInput, DeleteRestaurantOutput } from "./dtos/delete-restaurant.dto";
 import { EditRestaurantInput, EditRestaurantOutput } from "./dtos/edit-restaurant.dto";
@@ -104,5 +105,24 @@ export class RestaurantService {
                 error: "Could not delete restaurant."
             }
         }
+    }
+
+    async allCategories (): Promise<AllCategoriesOutput> {
+        try {
+            const categories = await this.categories.find();
+            return {
+                ok: true,
+                categories
+            }
+        } catch (e) {
+            return {
+                ok: false,
+                error: 'Could not load categories.'
+            }
+        }
+    }
+
+    countRestaurant (category: Category) {
+        return this.restaurant.count({ category });
     }
 }
