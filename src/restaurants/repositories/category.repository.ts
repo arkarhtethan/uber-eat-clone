@@ -5,7 +5,7 @@ import { Category } from "../entities/category.entity";
 export class CategoryRepository extends Repository<Category>{
 
     async getOrCreate (name: string): Promise<Category> {
-        const categoryName = name;
+        const categoryName = name.trim().toLowerCase();
         const categorySlug = categoryName.replace(/ /g, '-');
         let category = await this.findOne({ slug: categorySlug });
         if (!category) {
