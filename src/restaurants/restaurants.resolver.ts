@@ -5,9 +5,12 @@ import { Role } from "src/auth/role.decorator";
 import { User } from "src/users/entities/user.entity";
 import { ThisExpression } from "ts-morph";
 import { AllCategoriesOutput } from "./dtos/all-categories.dto";
+import { CategoryInput, CategoryOutput } from "./dtos/category.dto";
 import { CreateRestaurantInput, CreateRestaurantOutput } from "./dtos/create-restaurant.dto";
 import { DeleteRestaurantInput } from "./dtos/delete-restaurant.dto";
 import { EditRestaurantInput, EditRestaurantOutput } from "./dtos/edit-restaurant.dto";
+import { RestaurantInput, RestaurantOutput } from "./dtos/restaurant.dto";
+import { RestaurantsOutput, RestaurantsInput } from "./dtos/restaurants.dto";
 import { Category } from "./entities/category.entity";
 
 import { Restaurant } from "./entities/restaurant.entity";
@@ -59,5 +62,20 @@ export class CategoryResolver {
     @Query(type => AllCategoriesOutput)
     allCategories (): Promise<AllCategoriesOutput> {
         return this.restaurantService.allCategories();
+    }
+
+    @Query(type => CategoryOutput)
+    category (@Args('input') categoryInput: CategoryInput): Promise<CategoryOutput> {
+        return this.restaurantService.findCategoryBySlug(categoryInput);
+    }
+
+    @Query(type => RestaurantsOutput)
+    restaurants (@Args('input') restaurantsInput: RestaurantsInput): Promise<RestaurantOutput> {
+        return this.restaurantService.allRestaurants(restaurantsInput);
+    }
+
+    @Query(type => RestaurantOutput)
+    restaurant (@Args('input') restaurantInput: RestaurantInput): Promise<CategoryOutput> {
+        return this.restaurantService.findRestaurantById(restaurantInput);
     }
 }
