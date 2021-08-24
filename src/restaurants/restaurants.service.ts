@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "src/users/entities/user.entity";
-import { Repository } from "typeorm";
+import { Raw, Repository } from "typeorm";
 import { AllCategoriesOutput } from "./dtos/all-categories.dto";
 import { CategoryInput, CategoryOutput } from "./dtos/category.dto";
 import { CreateRestaurantInput, CreateRestaurantOutput } from "./dtos/create-restaurant.dto";
@@ -9,6 +9,7 @@ import { DeleteRestaurantInput, DeleteRestaurantOutput } from "./dtos/delete-res
 import { EditRestaurantInput, EditRestaurantOutput } from "./dtos/edit-restaurant.dto";
 import { RestaurantInput, RestaurantOutput } from "./dtos/restaurant.dto";
 import { RestaurantsOutput, RestaurantsInput } from "./dtos/restaurants.dto";
+import { SearchRestaurantInput, SearchRestaurantOutput } from "./dtos/search-restaurant.dto";
 import { Category } from "./entities/category.entity";
 import { Restaurant } from "./entities/restaurant.entity";
 import { CategoryRepository } from "./repositories/category.repository";
@@ -197,6 +198,31 @@ export class RestaurantService {
             return {
                 ok: false,
                 error: "Could not find restaurant"
+            }
+        }
+    }
+
+    async searchRestaurantByName ({ query, page }: SearchRestaurantInput): Promise<SearchRestaurantOutput> {
+        try {
+            const [restaurants, totalResults] = await this.restaurantRepository.findAndCount(
+                {
+                    where: {
+                        name: Raw(name => `${name} ILIKE '%${query}%'`)
+                    },
+                    skip: (page - 1) * 25,
+                    take: 25
+                },
+            );
+            return {
+                ok: true,
+                restaurants,
+                totalResults,
+                totalPages: Math.ceil(totalResults / 25),
+            }
+        } catch (e) {
+            return {
+                ok: false,
+                error: "Could not search for restaurant."
             }
         }
     }
