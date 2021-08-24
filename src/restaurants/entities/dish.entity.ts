@@ -5,7 +5,7 @@ import { Column, Entity, ManyToOne, RelationId } from "typeorm";
 import { Restaurant } from "./restaurant.entity";
 
 @InputType('DishOptionInputType', { isAbstract: true })
-ObjectType()
+@ObjectType()
 class DishOption {
     @Field(type => String)
     name: string;
