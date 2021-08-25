@@ -54,7 +54,7 @@ export class Restaurant extends CoreEntity {
     @RelationId((restaurant: Restaurant) => restaurant.owner)
     ownerId: number;
 
-    @Field(type => [Restaurant], { nullable: true })
+    @Field(type => [Dish], { nullable: true })
     @OneToMany(
         type => Dish,
         dish => dish.restaurant
