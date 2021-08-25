@@ -171,6 +171,7 @@ export class RestaurantService {
         try {
 
             const [restaurants, totalResults] = await this.restaurantRepository.findAndCount({
+                relations: ['owner'],
                 take: 25,
                 skip: (page - 1) * 25,
             })
@@ -181,6 +182,7 @@ export class RestaurantService {
                 totalResults,
             }
         } catch (e) {
+            console.log(e)
             return {
                 ok: false,
                 error: 'Could not load restaurants.'
@@ -193,7 +195,7 @@ export class RestaurantService {
             const restaurant = await this.restaurantRepository.findOne(
                 restaurantInput.restaurantId,
                 {
-                    relations: ["menu"]
+                    relations: ["menu", "owner"]
                 }
             );
             if (!restaurant) {
