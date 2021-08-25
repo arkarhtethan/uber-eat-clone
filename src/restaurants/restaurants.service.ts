@@ -182,7 +182,6 @@ export class RestaurantService {
                 totalResults,
             }
         } catch (e) {
-            console.log(e)
             return {
                 ok: false,
                 error: 'Could not load restaurants.'
