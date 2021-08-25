@@ -1,7 +1,6 @@
 import { Field, InputType, ObjectType, PickType } from "@nestjs/graphql";
 import { CoreOutput } from "src/common/dtos/output.dto";
 import { DishOption } from "src/restaurants/entities/dish.entity";
-import { Order } from "../entities/order.entity";
 
 @InputType()
 export class CreateOrderItemInput {
