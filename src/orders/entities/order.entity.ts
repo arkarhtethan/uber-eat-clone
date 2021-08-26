@@ -28,6 +28,12 @@ export class Order extends CoreEntity {
     @Field(type => User, { nullable: true })
     customer?: User;
 
+    @RelationId((order: Order) => order.customer)
+    customerId: number;
+
+    @RelationId((order: Order) => order.driver)
+    driverId: number;
+
     @ManyToOne(
         type => User,
         user => user.rides,
