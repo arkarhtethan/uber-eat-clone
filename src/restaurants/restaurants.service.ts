@@ -132,8 +132,8 @@ export class RestaurantService {
         }
     }
 
-    countRestaurant (category: Category) {
-        return this.restaurantRepository.count({ category });
+    async countRestaurant (category: Category): Promise<Number> {
+        return await this.restaurantRepository.count({ category });
     }
 
     async findCategoryBySlug ({ slug, page }: CategoryInput): Promise<CategoryOutput> {
@@ -157,7 +157,7 @@ export class RestaurantService {
             return {
                 ok: true,
                 category,
-                totalPages: Math.ceil(totalResults / 25),
+                totalPages: Math.ceil(parseFloat(totalResults.toString()) / 25),
             }
         } catch (e) {
             return {
