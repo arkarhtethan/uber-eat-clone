@@ -2,9 +2,11 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Dish } from "src/restaurants/entities/dish.entity";
 import { Restaurant } from "src/restaurants/entities/restaurant.entity";
-import { User } from "src/users/entities/user.entity";
+import { User, UserRole } from "src/users/entities/user.entity";
 import { Repository } from "typeorm";
 import { CreateOrderInput, CreateOrderOutput } from "./dtos/create-order.dto";
+import { GetOrderInput, GetOrderOutput } from "./dtos/get-order.dto";
+import { GetOrdersInput, GetOrdersOutput } from "./dtos/get-orders.dto";
 import { OrderItem } from "./entities/order-item.entity";
 import { Order } from "./entities/order.entity";
 
@@ -20,6 +22,19 @@ export class OrderService {
         @InjectRepository(Dish)
         private readonly dishes: Repository<Dish>,
     ) { }
+
+    flat (input, depth = 1, stack = []) {
+        for (let item of input) {
+            if (item instanceof Array && depth > 0) {
+                this.flat(item, depth - 1, stack);
+            }
+            else {
+                stack.push(item);
+            }
+        }
+
+        return stack;
+    }
 
     async createOrder (
         customer: User,
@@ -88,6 +103,95 @@ export class OrderService {
             return {
                 ok: false,
                 error: "Could not create order."
+            }
+        }
+    }
+
+    async getOrders (
+        user: User,
+        { status }: GetOrdersInput
+    ): Promise<GetOrdersOutput> {
+        try {
+            let orders: Order[] = [];
+            if (user.role === UserRole.Client) {
+                orders = await this.orders.find({
+                    where: {
+                        customer: user,
+                        ...(status && { status }),
+                    }
+                })
+            } else if (user.role === UserRole.Delivery) {
+                orders = await this.orders.find({
+                    where: {
+                        customer: user,
+                        ...(status && { status }),
+                    }
+                })
+            } else if (user.role === UserRole.Owner) {
+                const restaurants = await this.restaurants.find({
+                    where: {
+                        owner: user,
+                    },
+                    relations: ['orders']
+                });
+                orders = this.flat(restaurants.map(restaurant => restaurant.orders));
+                if (status) {
+                    orders = orders.filter(order => order.status === status);
+                }
+            }
+            return {
+                orders,
+                ok: true,
+            }
+        } catch (e) {
+            return {
+                ok: false,
+                error: "Could not get orders."
+            }
+        }
+
+    }
+
+    async getOrder (
+        user: User,
+        { id: orderId }: GetOrderInput
+    ): Promise<GetOrderOutput> {
+        try {
+            const order = await this.orders.findOne(orderId, { relations: ['restaurant'] });
+            if (!order) {
+                return {
+                    ok: false,
+                    error: "Order not found."
+                }
+            }
+            let allowed = true;
+            if (user.role === UserRole.Client && order.customerId !== user.id) {
+                allowed = false;
+            }
+            if (user.role === UserRole.Delivery && order.driverId !== user.id) {
+                allowed = false;
+            }
+            if (
+                user.role === UserRole.Owner &&
+                order.restaurant.ownerId !== user.id
+            ) {
+                allowed = false;
+            }
+            if (!allowed) {
+                return {
+                    ok: false,
+                    error: "Permission denied."
+                }
+            }
+            return {
+                ok: true,
+                order,
+            }
+        } catch (e) {
+            console.log(e);
+            return {
+                ok: false,
+                error: "Could no find order."
             }
         }
     }
