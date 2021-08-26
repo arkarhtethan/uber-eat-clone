@@ -47,7 +47,7 @@ export class OrderResolver {
         @AuthUser() user: User,
         @Args('input') editOrderInput: EditOrderInput
     ) {
-
+        return this.orderService.editOrder(user, editOrderInput);
     }
 
 }
