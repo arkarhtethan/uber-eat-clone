@@ -171,7 +171,7 @@ export class RestaurantService {
         try {
 
             const [restaurants, totalResults] = await this.restaurantRepository.findAndCount({
-                relations: ['owner'],
+                relations: ['owner', 'menu'],
                 take: 25,
                 skip: (page - 1) * 25,
             })
