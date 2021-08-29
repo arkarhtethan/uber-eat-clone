@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { Interval } from "@nestjs/schedule";
 import { User } from "src/users/entities/user.entity";
-import { Raw, Repository } from "typeorm";
+import { LessThan, Raw, Repository } from "typeorm";
 import { AllCategoriesOutput } from "./dtos/all-categories.dto";
 import { CategoryInput, CategoryOutput } from "./dtos/category.dto";
 import { CreateDishInput, CreateDishOutput } from "./dtos/create-dish.dto";
@@ -172,8 +173,11 @@ export class RestaurantService {
 
             const [restaurants, totalResults] = await this.restaurantRepository.findAndCount({
                 relations: ['owner', 'menu'],
-                take: 25,
                 skip: (page - 1) * 25,
+                take: 25,
+                order: {
+                    isPromoted: "DESC",
+                }
             })
             return {
                 ok: true,
@@ -335,4 +339,18 @@ export class RestaurantService {
         }
     }
 
+    @Interval(2000)
+    async checkPromotedRestaurants () {
+        const restaurants = await this.restaurantRepository.find(
+            {
+                isPromoted: true,
+                promoteUntil: LessThan(new Date())
+            }
+        );
+        restaurants.forEach(async restaurant => {
+            restaurant.isPromoted = false;
+            restaurant.promoteUntil = null;
+            await this.restaurantRepository.save(restaurant);
+        })
+    }
 }
