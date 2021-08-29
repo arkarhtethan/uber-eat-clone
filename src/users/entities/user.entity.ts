@@ -73,7 +73,6 @@ export class User extends CoreEntity {
             try {
                 this.password = await bcrypt.hash(this.password, 10);
             } catch (error) {
-                console.log(error);
                 throw new InternalServerErrorException()
             }
         }
