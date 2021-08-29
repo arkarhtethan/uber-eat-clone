@@ -24,7 +24,7 @@ export class Order extends CoreEntity {
     @ManyToOne(
         type => User,
         user => user.orders,
-        { onDelete: "CASCADE", nullable: true, eager: true }
+        { onDelete: 'SET NULL', nullable: true, eager: true }
     )
     @Field(type => User, { nullable: true })
     customer?: User;
