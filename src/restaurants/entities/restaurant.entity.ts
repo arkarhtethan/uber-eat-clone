@@ -61,4 +61,13 @@ export class Restaurant extends CoreEntity {
     )
     menu: Dish[];
 
+    @Field(type => Boolean,)
+    @Column({ default: false, })
+    isPromoted: boolean;
+
+    @Field(type => Date)
+    @Column({ nullable: true })
+    promoteUntil: Date;
+
+
 }
