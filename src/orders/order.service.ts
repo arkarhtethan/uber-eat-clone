@@ -1,5 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { PubSub } from "graphql-subscriptions";
+import { NEW_PENDING_ORDER, PUB_SUB } from "src/common/common.constant";
 import { Dish } from "src/restaurants/entities/dish.entity";
 import { Restaurant } from "src/restaurants/entities/restaurant.entity";
 import { User, UserRole } from "src/users/entities/user.entity";
@@ -22,6 +24,8 @@ export class OrderService {
         private readonly orderItems: Repository<OrderItem>,
         @InjectRepository(Dish)
         private readonly dishes: Repository<Dish>,
+        @Inject(PUB_SUB)
+        private readonly pubSub: PubSub,
     ) { }
 
     flat (input, depth = 1, stack = []) {
@@ -114,6 +118,7 @@ export class OrderService {
                     }
                 )
             )
+            await this.pubSub.publish(NEW_PENDING_ORDER, { pendingOrders: { order, ownerId: restaurant.ownerId, } });
             return {
                 ok: true,
             }
@@ -136,7 +141,7 @@ export class OrderService {
                     where: {
                         customer: user,
                         ...(status && { status }),
-                    }
+                    },
                 })
             } else if (user.role === UserRole.Delivery) {
                 orders = await this.orders.find({
@@ -150,9 +155,10 @@ export class OrderService {
                     where: {
                         owner: user,
                     },
-                    relations: ['orders']
+                    relations: ['orders',]
                 });
                 orders = this.flat(restaurants.map(restaurant => restaurant.orders));
+                console.log(orders);
                 if (status) {
                     orders = orders.filter(order => order.status === status);
                 }
@@ -175,7 +181,7 @@ export class OrderService {
         { id: orderId }: GetOrderInput
     ): Promise<GetOrderOutput> {
         try {
-            const order = await this.orders.findOne(orderId, { relations: ['restaurant'] });
+            const order = await this.orders.findOne(orderId, { relations: ['restaurant', 'items'] });
             if (!order) {
                 return {
                     ok: false,
@@ -194,7 +200,6 @@ export class OrderService {
                 order,
             }
         } catch (e) {
-            console.log(e);
             return {
                 ok: false,
                 error: "Could no find order."
